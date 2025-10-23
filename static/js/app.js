@@ -265,25 +265,21 @@ async function analyzeMPA() {
     const loadingMessage = document.getElementById('loading-message');
     const loadingTitle = document.getElementById('loading-title');
     
-    // Reset progress steps
-    document.querySelectorAll('.progress-step').forEach(step => {
-        step.classList.remove('active', 'completed');
+    // Reset progress indicator
+    document.querySelectorAll('.dot').forEach(dot => {
+        dot.classList.remove('active', 'completed');
     });
-    document.getElementById('step-1').classList.add('active');
+    document.getElementById('dot-1').classList.add('active');
+    document.getElementById('progress-status').textContent = 'Connecting to Global Fishing Watch';
     
     if (daysDiff > 365) {
         const years = Math.ceil(daysDiff / 365);
         loadingTitle.textContent = `Multi-Year Analysis (${years} years)`;
         loadingMessage.textContent = `Processing ${years} separate API calls - this will take ${years * 15}-${years * 30} seconds`;
         
-        // Update step 2 text for multi-year
-        document.querySelector('#step-2 .step-text').textContent = `Fetching data (${years} API calls)`;
     } else {
         loadingTitle.textContent = `Analyzing ${selectedMPA.Site_Name}`;
         loadingMessage.textContent = `Querying Global Fishing Watch database...`;
-        
-        // Reset step 2 text
-        document.querySelector('#step-2 .step-text').textContent = 'Fetching vessel data';
     }
     
     // Start progress simulation
@@ -871,6 +867,13 @@ async function downloadCSV() {
 }
 
 // Progress tracking functions
+const progressMessages = [
+    'Connecting to Global Fishing Watch',
+    'Fetching vessel data',
+    'Processing analysis',
+    'Generating results'
+];
+
 function simulateProgress() {
     // Step 1: Connection (already active)
     setTimeout(() => completeProgressStep(1), 500);
@@ -880,26 +883,27 @@ function simulateProgress() {
         completeProgressStep(1);
         activateProgressStep(2);
     }, 800);
-    
-    // Step 3: Processing (will be activated when data arrives)
-    // Step 4: Results (will be activated when complete)
 }
 
 function activateProgressStep(stepNumber) {
-    const step = document.getElementById(`step-${stepNumber}`);
-    if (step) {
-        // Remove active from all steps
-        document.querySelectorAll('.progress-step').forEach(s => s.classList.remove('active'));
-        // Activate current step
-        step.classList.add('active');
+    const dot = document.getElementById(`dot-${stepNumber}`);
+    const status = document.getElementById('progress-status');
+    
+    if (dot && status) {
+        // Remove active from all dots
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+        // Activate current dot
+        dot.classList.add('active');
+        // Update status text
+        status.textContent = progressMessages[stepNumber - 1];
     }
 }
 
 function completeProgressStep(stepNumber) {
-    const step = document.getElementById(`step-${stepNumber}`);
-    if (step) {
-        step.classList.remove('active');
-        step.classList.add('completed');
+    const dot = document.getElementById(`dot-${stepNumber}`);
+    if (dot) {
+        dot.classList.remove('active');
+        dot.classList.add('completed');
         
         // Activate next step if not the last
         if (stepNumber < 4) {
@@ -909,9 +913,10 @@ function completeProgressStep(stepNumber) {
 }
 
 function resetProgress() {
-    document.querySelectorAll('.progress-step').forEach(step => {
-        step.classList.remove('active', 'completed');
+    document.querySelectorAll('.dot').forEach(dot => {
+        dot.classList.remove('active', 'completed');
     });
+    document.getElementById('progress-status').textContent = '';
 }
 
 // Download as PDF
