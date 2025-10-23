@@ -152,13 +152,13 @@ function setupDateInputs() {
     document.getElementById('end-date').value = new Date().toISOString().split('T')[0];
     
     // Set default preset button as active
-    document.querySelector('.btn-preset[data-days="30"]').classList.add('active');
+    document.querySelector('.preset-chip[data-days="30"]').classList.add('active');
     updateDateInfo();
 }
 
 // Setup preset date range buttons
 function setupPresetButtons() {
-    const presetButtons = document.querySelectorAll('.btn-preset');
+    const presetButtons = document.querySelectorAll('.preset-chip');
     
     presetButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -193,7 +193,7 @@ function setupDateValidation() {
     [startDateInput, endDateInput].forEach(input => {
         input.addEventListener('change', function() {
             // Clear active preset button when manually changing dates
-            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
             updateDateInfo();
         });
     });
@@ -360,75 +360,90 @@ function displayResults(data) {
 function displayMultiYearAnalysis(multiYearData) {
     const multiYearSection = document.getElementById('multi-year-section');
     
-    if (!multiYearData || Object.keys(multiYearData).length === 0 || multiYearData.total_years <= 1) {
+    // Safe check - only show if multiYearData exists and has meaningful content
+    if (!multiYearData || 
+        typeof multiYearData !== 'object' || 
+        !multiYearData.total_years || 
+        multiYearData.total_years <= 1) {
         multiYearSection.style.display = 'none';
         return;
     }
     
     multiYearSection.style.display = 'block';
     
-    // Update summary cards
-    document.getElementById('total-years').textContent = `${multiYearData.total_years.toFixed(1)} years`;
+    // Update summary cards with safe property access
+    const totalYearsElement = document.getElementById('total-years');
+    if (totalYearsElement && multiYearData.total_years) {
+        totalYearsElement.textContent = `${multiYearData.total_years.toFixed(1)} years`;
+    }
     
-    // Trend direction
+    // Trend direction with safe property access
     const trendElement = document.getElementById('trend-direction');
-    if (multiYearData.trend_analysis && multiYearData.trend_analysis.trend_direction) {
-        const direction = multiYearData.trend_analysis.trend_direction;
-        const strength = multiYearData.trend_analysis.trend_strength || '';
-        
-        let trendIcon = '→';
-        let trendClass = 'trend-stable';
-        
-        if (direction === 'increasing') {
-            trendIcon = '↗️';
-            trendClass = 'trend-increasing';
-        } else if (direction === 'decreasing') {
-            trendIcon = '↘️';
-            trendClass = 'trend-decreasing';
+    if (trendElement) {
+        if (multiYearData.trend_analysis && multiYearData.trend_analysis.trend_direction) {
+            const direction = multiYearData.trend_analysis.trend_direction;
+            const strength = multiYearData.trend_analysis.trend_strength || '';
+            
+            let trendIcon = '→';
+            let trendClass = 'trend-stable';
+            
+            if (direction === 'increasing') {
+                trendIcon = '↗️';
+                trendClass = 'trend-increasing';
+            } else if (direction === 'decreasing') {
+                trendIcon = '↘️';
+                trendClass = 'trend-decreasing';
+            }
+            
+            trendElement.innerHTML = `<span class="trend-indicator ${trendClass}">${trendIcon}</span> ${direction}`;
+            
+            if (strength) {
+                trendElement.innerHTML += ` <small>(${strength})</small>`;
+            }
+        } else {
+            trendElement.textContent = 'Insufficient data';
         }
-        
-        trendElement.innerHTML = `<span class="trend-indicator ${trendClass}">${trendIcon}</span> ${direction}`;
-        
-        if (strength) {
-            trendElement.innerHTML += ` <small>(${strength})</small>`;
-        }
-    } else {
-        trendElement.textContent = 'Insufficient data';
     }
     
-    // Peak season
+    // Peak season with safe property access
     const peakSeasonElement = document.getElementById('peak-season');
-    if (multiYearData.seasonal_patterns && multiYearData.seasonal_patterns.peak_month) {
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const peakMonth = monthNames[multiYearData.seasonal_patterns.peak_month - 1];
-        peakSeasonElement.textContent = peakMonth;
-    } else {
-        peakSeasonElement.textContent = 'N/A';
+    if (peakSeasonElement) {
+        if (multiYearData.seasonal_patterns && multiYearData.seasonal_patterns.peak_month) {
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const peakMonth = monthNames[multiYearData.seasonal_patterns.peak_month - 1];
+            peakSeasonElement.textContent = peakMonth || 'N/A';
+        } else {
+            peakSeasonElement.textContent = 'N/A';
+        }
     }
     
-    // Yearly breakdown
+    // Yearly breakdown with safe property access
     const yearlyBreakdown = document.getElementById('yearly-breakdown');
-    yearlyBreakdown.innerHTML = '';
-    
-    if (multiYearData.yearly_summary) {
-        const years = Object.keys(multiYearData.yearly_summary).sort();
+    if (yearlyBreakdown) {
+        yearlyBreakdown.innerHTML = '';
         
-        years.forEach(year => {
-            const yearData = multiYearData.yearly_summary[year];
-            const yearItem = document.createElement('div');
-            yearItem.className = 'yearly-breakdown-item';
+        if (multiYearData.yearly_summary && typeof multiYearData.yearly_summary === 'object') {
+            const years = Object.keys(multiYearData.yearly_summary).sort();
             
-            yearItem.innerHTML = `
-                <div class="year-label">${year}</div>
-                <div class="year-stats">
-                    <span>${yearData.total_hours.toFixed(1)} hours</span>
-                    <span>${yearData.unique_vessels} vessels</span>
-                </div>
-            `;
-            
-            yearlyBreakdown.appendChild(yearItem);
-        });
+            years.forEach(year => {
+                const yearData = multiYearData.yearly_summary[year];
+                if (yearData && yearData.total_hours !== undefined && yearData.unique_vessels !== undefined) {
+                    const yearItem = document.createElement('div');
+                    yearItem.className = 'yearly-breakdown-item';
+                    
+                    yearItem.innerHTML = `
+                        <div class="year-label">${year}</div>
+                        <div class="year-stats">
+                            <span>${yearData.total_hours.toFixed(1)} hours</span>
+                            <span>${yearData.unique_vessels} vessels</span>
+                        </div>
+                    `;
+                    
+                    yearlyBreakdown.appendChild(yearItem);
+                }
+            });
+        }
     }
 }
 

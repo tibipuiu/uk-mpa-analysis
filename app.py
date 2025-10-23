@@ -335,8 +335,9 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
     
     try:
         if days_diff <= 365:
-            # Single API call for ranges <= 1 year
+            # Single API call for ranges <= 1 year - NO rate limiting for better performance
             print("Single year analysis - making one API call")
+            start_time = time.time()
             report = await client.fourwings.create_report(
                 spatial_resolution="HIGH",
                 temporal_resolution="MONTHLY",
@@ -348,7 +349,8 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
             )
             
             df = report.df()
-            print(f"Retrieved {len(df)} fishing activity records")
+            elapsed_time = time.time() - start_time
+            print(f"Retrieved {len(df)} fishing activity records in {elapsed_time:.2f}s")
         else:
             # Multi-year analysis - split into yearly chunks
             date_ranges = split_date_range_into_years(start_date, end_date)

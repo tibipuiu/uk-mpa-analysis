@@ -31,33 +31,59 @@
                     </div>
 
                     <div class="date-range-section">
-                        <h3>Date Range Selection</h3>
-                        <div class="preset-buttons">
-                            <button type="button" class="btn-preset" data-days="30">Last 30 Days</button>
-                            <button type="button" class="btn-preset" data-days="90">Last 3 Months</button>
-                            <button type="button" class="btn-preset" data-days="180">Last 6 Months</button>
-                            <button type="button" class="btn-preset" data-days="365">Last Year</button>
-                            <button type="button" class="btn-preset" data-days="730">Last 2 Years</button>
-                        </div>
-                        
-                        <div class="custom-dates">
-                            <div class="form-group">
-                                <label for="start-date">Custom Start Date:</label>
-                                <input type="date" id="start-date">
+                        <div class="preset-section">
+                            <label class="section-label">Quick Select</label>
+                            <div class="preset-grid">
+                                <button type="button" class="preset-chip active" data-days="30">
+                                    <span class="chip-label">30 Days</span>
+                                </button>
+                                <button type="button" class="preset-chip" data-days="90">
+                                    <span class="chip-label">3 Months</span>
+                                </button>
+                                <button type="button" class="preset-chip" data-days="180">
+                                    <span class="chip-label">6 Months</span>
+                                </button>
+                                <button type="button" class="preset-chip" data-days="365">
+                                    <span class="chip-label">1 Year</span>
+                                </button>
+                                <button type="button" class="preset-chip" data-days="730">
+                                    <span class="chip-label">2 Years</span>
+                                    <span class="chip-badge">Multi-year</span>
+                                </button>
                             </div>
-
-                            <div class="form-group">
-                                <label for="end-date">Custom End Date:</label>
-                                <input type="date" id="end-date">
+                        </div>
+                        
+                        <div class="custom-section">
+                            <label class="section-label">Custom Range</label>
+                            <div class="date-inputs">
+                                <div class="input-group">
+                                    <label for="start-date">From</label>
+                                    <input type="date" id="start-date">
+                                </div>
+                                <div class="input-group">
+                                    <label for="end-date">To</label>
+                                    <input type="date" id="end-date">
+                                </div>
                             </div>
                         </div>
                         
-                        <div id="date-warning" class="date-warning" style="display: none;">
-                            <p><strong>⚠️ Multi-Year Analysis:</strong> Date ranges longer than 1 year require multiple API calls and will take longer to process. Progress will be shown during analysis.</p>
+                        <div id="date-warning" class="alert alert-warning" style="display: none;">
+                            <div class="alert-icon">⚠️</div>
+                            <div class="alert-content">
+                                <strong>Multi-Year Analysis</strong>
+                                <p>This date range requires multiple API calls and will take longer to process.</p>
+                            </div>
                         </div>
                         
-                        <div id="date-info" class="date-info">
-                            <p><strong>Selected Range:</strong> <span id="selected-range">Last 30 days</span> | <strong>Estimated Time:</strong> <span id="estimated-time">~5-10 seconds</span></p>
+                        <div id="date-info" class="range-info">
+                            <div class="info-item">
+                                <span class="info-label">Selected:</span>
+                                <span id="selected-range" class="info-value">Last 30 days</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Est. time:</span>
+                                <span id="estimated-time" class="info-value">~5-10 seconds</span>
+                            </div>
                         </div>
                     </div>
 
