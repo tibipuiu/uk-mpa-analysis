@@ -166,7 +166,6 @@ function setupDateInputs() {
         input.addEventListener('change', function() {
             // Clear active preset when manually changing dates
             document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
-            updateDateInfo();
         });
     });
     
@@ -175,8 +174,6 @@ function setupDateInputs() {
     if (defaultButton) {
         defaultButton.classList.add('active');
     }
-    
-    updateDateInfo();
 }
 
 // Setup preset date range buttons
@@ -213,83 +210,11 @@ function setupPresetButtons() {
             startInput.value = formatDate(startDate);
             endInput.value = formatDate(endDate);
             
-            
-            // Update info display
-            updateDateInfo();
         });
     });
 }
 
 
-// Update date info display
-function updateDateInfo() {
-    const startInput = document.getElementById('start-date');
-    const endInput = document.getElementById('end-date');
-    
-    if (!startInput.value || !endInput.value) {
-        return;
-    }
-    
-    const startDate = new Date(startInput.value);
-    const endDate = new Date(endInput.value);
-    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    
-    // Update selected range text
-    const selectedRangeElement = document.getElementById('selected-range');
-    const estimatedTimeElement = document.getElementById('estimated-time');
-    const dateWarningElement = document.getElementById('date-warning');
-    
-    if (daysDiff <= 0) {
-        selectedRangeElement.textContent = 'Invalid date range';
-        estimatedTimeElement.textContent = 'N/A';
-        dateWarningElement.style.display = 'none';
-        return;
-    }
-    
-    // Format date range nicely
-    const formatDate = (date) => {
-        const options = { 
-            day: 'numeric', 
-            month: 'short', 
-            year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-        };
-        return date.toLocaleDateString('en-GB', options);
-    };
-    
-    // Create readable range description
-    let rangeText;
-    if (daysDiff === 1) {
-        rangeText = `${formatDate(startDate)} (1 day)`;
-    } else if (daysDiff <= 31) {
-        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (${daysDiff} days)`;
-    } else if (daysDiff <= 365) {
-        const months = Math.round(daysDiff / 30);
-        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (~${months} month${months > 1 ? 's' : ''})`;
-    } else {
-        const years = (daysDiff / 365).toFixed(1);
-        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (~${years} years)`;
-    }
-    
-    selectedRangeElement.textContent = rangeText;
-    
-    // Show warning and estimate time for multi-year queries
-    if (daysDiff > 365) {
-        dateWarningElement.style.display = 'block';
-        const apiCalls = Math.ceil(daysDiff / 365);
-        estimatedTimeElement.textContent = `${apiCalls * 15}-${apiCalls * 30} seconds (${apiCalls} API calls)`;
-    } else {
-        dateWarningElement.style.display = 'none';
-        if (daysDiff <= 7) {
-            estimatedTimeElement.textContent = '3-5 seconds';
-        } else if (daysDiff <= 30) {
-            estimatedTimeElement.textContent = '5-10 seconds';
-        } else if (daysDiff <= 90) {
-            estimatedTimeElement.textContent = '8-15 seconds';
-        } else {
-            estimatedTimeElement.textContent = '10-20 seconds';
-        }
-    }
-}
 
 // Setup analyze button
 function setupAnalyzeButton() {
@@ -333,18 +258,36 @@ async function analyzeMPA() {
         appDescription.style.display = 'none';
     }
     
-    // Update loading message based on date range
+    // Update loading message and setup progress tracking
     const start = new Date(startDate);
     const end = new Date(endDate);
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     const loadingMessage = document.getElementById('loading-message');
+    const loadingTitle = document.getElementById('loading-title');
+    
+    // Reset progress steps
+    document.querySelectorAll('.progress-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+    });
+    document.getElementById('step-1').classList.add('active');
     
     if (daysDiff > 365) {
         const years = Math.ceil(daysDiff / 365);
-        loadingMessage.textContent = `Analyzing ${years}-year period... This may take ${years * 15}-${years * 30} seconds`;
+        loadingTitle.textContent = `Multi-Year Analysis (${years} years)`;
+        loadingMessage.textContent = `Processing ${years} separate API calls - this will take ${years * 15}-${years * 30} seconds`;
+        
+        // Update step 2 text for multi-year
+        document.querySelector('#step-2 .step-text').textContent = `Fetching data (${years} API calls)`;
     } else {
-        loadingMessage.textContent = `Querying Global Fishing Watch API for ${selectedMPA.Site_Name}...`;
+        loadingTitle.textContent = `Analyzing ${selectedMPA.Site_Name}`;
+        loadingMessage.textContent = `Querying Global Fishing Watch database...`;
+        
+        // Reset step 2 text
+        document.querySelector('#step-2 .step-text').textContent = 'Fetching vessel data';
     }
+    
+    // Start progress simulation
+    simulateProgress();
     
     // Smooth scroll to loading section
     setTimeout(() => {
@@ -368,9 +311,20 @@ async function analyzeMPA() {
             })
         });
         
+        // Activate processing step when we get response
+        completeProgressStep(2);
+        activateProgressStep(3);
+        
         const data = await response.json();
         
         if (data.status === 'success') {
+            // Complete processing and activate results
+            completeProgressStep(3);
+            activateProgressStep(4);
+            
+            // Small delay for user to see final step
+            setTimeout(() => completeProgressStep(4), 300);
+            
             currentAnalysisData = data; // Store for downloads
             displayResults(data);
         } else {
@@ -390,6 +344,8 @@ async function analyzeMPA() {
         });
     } finally {
         document.getElementById('loading').style.display = 'none';
+        // Reset progress on completion
+        resetProgress();
     }
 }
 
@@ -912,6 +868,50 @@ async function downloadCSV() {
     } catch (error) {
         alert('Error: ' + error.message);
     }
+}
+
+// Progress tracking functions
+function simulateProgress() {
+    // Step 1: Connection (already active)
+    setTimeout(() => completeProgressStep(1), 500);
+    
+    // Step 2: Fetching data
+    setTimeout(() => {
+        completeProgressStep(1);
+        activateProgressStep(2);
+    }, 800);
+    
+    // Step 3: Processing (will be activated when data arrives)
+    // Step 4: Results (will be activated when complete)
+}
+
+function activateProgressStep(stepNumber) {
+    const step = document.getElementById(`step-${stepNumber}`);
+    if (step) {
+        // Remove active from all steps
+        document.querySelectorAll('.progress-step').forEach(s => s.classList.remove('active'));
+        // Activate current step
+        step.classList.add('active');
+    }
+}
+
+function completeProgressStep(stepNumber) {
+    const step = document.getElementById(`step-${stepNumber}`);
+    if (step) {
+        step.classList.remove('active');
+        step.classList.add('completed');
+        
+        // Activate next step if not the last
+        if (stepNumber < 4) {
+            setTimeout(() => activateProgressStep(stepNumber + 1), 200);
+        }
+    }
+}
+
+function resetProgress() {
+    document.querySelectorAll('.progress-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+    });
 }
 
 // Download as PDF

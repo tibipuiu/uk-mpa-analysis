@@ -71,25 +71,6 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <div id="date-warning" class="alert alert-warning" style="display: none;">
-                            <div class="alert-icon">⚠️</div>
-                            <div class="alert-content">
-                                <strong>Multi-Year Analysis</strong>
-                                <p>This date range requires multiple API calls and will take longer to process.</p>
-                            </div>
-                        </div>
-                        
-                        <div id="date-info" class="range-info">
-                            <div class="info-item">
-                                <span class="info-label">Selected:</span>
-                                <span id="selected-range" class="info-value">Last 30 days</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Est. time:</span>
-                                <span id="estimated-time" class="info-value">~5-10 seconds</span>
-                            </div>
-                        </div>
                     </div>
 
                     <button id="analyze-btn" class="btn-primary">Analyze Fishing Activity</button>
@@ -141,12 +122,25 @@
 
             <section id="loading" class="loading-section" style="display: none;">
                 <div class="spinner"></div>
+                <h3 id="loading-title">Analyzing Fishing Activity</h3>
                 <p id="loading-message">Querying Global Fishing Watch API...</p>
-                <div id="progress-container" style="display: none;">
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill"></div>
+                <div id="progress-details" class="progress-details">
+                    <div class="progress-step active" id="step-1">
+                        <div class="step-icon">🔍</div>
+                        <div class="step-text">Connecting to Global Fishing Watch</div>
                     </div>
-                    <p id="progress-text">Fetching data for year 1 of 3...</p>
+                    <div class="progress-step" id="step-2">
+                        <div class="step-icon">📊</div>
+                        <div class="step-text">Fetching vessel data</div>
+                    </div>
+                    <div class="progress-step" id="step-3">
+                        <div class="step-icon">⚙️</div>
+                        <div class="step-text">Processing analysis</div>
+                    </div>
+                    <div class="progress-step" id="step-4">
+                        <div class="step-icon">✅</div>
+                        <div class="step-text">Generating results</div>
+                    </div>
                 </div>
             </section>
 
