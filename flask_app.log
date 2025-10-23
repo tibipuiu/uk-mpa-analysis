@@ -1,0 +1,154 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+127.0.0.1 - - [23/Oct/2025 19:21:11] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:31:48] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:31:48] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:31:48] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:31:48] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [23/Oct/2025 19:33:24] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:37:00] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:37:00] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:00] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 19:37:02] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 19:37:02] "GET /static/js/app.js HTTP/1.1" 304 -
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+Analyzing: Western Channel (ID: 555622038)
+Time period: 2025-09-23 to 2025-10-23
+Retrieved 725 fishing activity records
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+127.0.0.1 - - [23/Oct/2025 20:04:15] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:04:15] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:04:15] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:04:16] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:25:08] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:25:08] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:25:08] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:25:08] "GET /static/logo-zmescience.png HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:37:33] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:37:33] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:37:33] "GET /static/logo-zmescience.png HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:37:33] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:37:33] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [23/Oct/2025 20:37:54] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:38:07] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:38:10] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:38:50] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:47:25] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:47:26] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 20:47:26] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 20:47:26] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:47:50] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:48:57] "POST /api/export_pdf HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 20:49:22] "POST /api/export_csv HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:27:58] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:27:58] "GET /static/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:27:58] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:27:58] "GET /static/js/app.js HTTP/1.1" 200 -
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+Analyzing: Dogger Bank (ID: 555556968)
+Time period: 2025-07-01 to 2025-10-23
+Retrieved 1739 fishing activity records
+Analyzing: North Colonsay and Western Cliffs (ID: 555557105)
+Time period: 2024-01-23 to 2025-10-23
+Error analyzing MPA data: Error code: 422 - {'statusCode': 422, 'error': 'Unprocessable Entity', 'messages': [{'title': 'date-range', 'detail': 'Maximum of 366 days time range supported.'}]} 
+Body: {'statusCode': 422, 'error': 'Unprocessable Entity', 'messages': [{'title': 'date-range', 'detail': 'Maximum of 366 days time range supported.'}]}
+Analyzing: North Colonsay and Western Cliffs (ID: 555557105)
+Time period: 2024-01-23 to 2024-10-23
+Analyzing: North Colonsay and Western Cliffs (ID: 555557105)
+Time period: 2024-01-23 to 2024-10-23
+Error analyzing MPA data: Error code: 429 - {'statusCode': 429, 'error': 'Too Many Requests', 'messages': [{'title': 'Too Many Requests', 'detail': 'Your application token is not currently enabled to perform more than one concurrent report. If you need to generate more than one report concurrently, contact us at apis@globalfishingwatch.org', 'metadata': {'currentReportBody': {'geojson': None, 'region': {'bufferOperation': None, 'bufferUnit': '', 'bufferValue': None, 'dataset': 'public-mpa-all', 'id': '555557105'}}, 'currentReportUrl': '/v3/4wings/report?spatial-resolution=HIGH&format=JSON&group-by=VESSEL_ID&temporal-resolution=MONTHLY&datasets%5B0%5D=public-global-fishing-effort%3Alatest&date-range=2024-01-23%2C2024-10-23'}}]} 
+Body: {'statusCode': 429, 'error': 'Too Many Requests', 'messages': [{'title': 'Too Many Requests', 'detail': 'Your application token is not currently enabled to perform more than one concurrent report. If you need to generate more than one report concurrently, contact us at apis@globalfishingwatch.org', 'metadata': {'currentReportBody': {'geojson': None, 'region': {'bufferOperation': None, 'bufferUnit': '', 'bufferValue': None, 'dataset': 'public-mpa-all', 'id': '555557105'}}, 'currentReportUrl': '/v3/4wings/report?spatial-resolution=HIGH&format=JSON&group-by=VESSEL_ID&temporal-resolution=MONTHLY&datasets%5B0%5D=public-global-fishing-effort%3Alatest&date-range=2024-01-23%2C2024-10-23'}}]}
+Retrieved 1 fishing activity records
+Analyzing: Western Channel (ID: 555622038)
+Time period: 2024-01-23 to 2024-10-23
+Retrieved 8077 fishing activity records
+Analyzing: Western Channel (ID: 555622038)
+Time period: 2025-07-08 to 2025-10-23
+Retrieved 3972 fishing activity records
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+127.0.0.1 - - [23/Oct/2025 21:39:50] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:39:50] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:39:50] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:39:50] "GET /static/js/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:39:52] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:39:52] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:39:52] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:39:52] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 21:40:06] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:40:38] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:41:23] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:41:30] "POST /api/export_pdf HTTP/1.1" 200 -
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+Analyzing: Dogger Bank (ID: 555556968)
+Time period: 2025-07-01 to 2025-10-23
+Retrieved 1739 fishing activity records
+Analyzing: Dogger Bank (ID: 555556968)
+Time period: 2025-03-01 to 2025-10-23
+Retrieved 4275 fishing activity records
+Analyzing: Western Channel (ID: 555622038)
+Time period: 2025-03-01 to 2025-10-23
+Retrieved 7820 fishing activity records
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 902-028-408
+127.0.0.1 - - [23/Oct/2025 21:45:29] "POST /api/analyze_mpa HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 21:45:31] "POST /api/export_pdf HTTP/1.1" 200 -
+ * Detected change in '/mnt/d/EJSN 2025 grant/GFW-Extract/mpa_app/app.py', reloading
+Analyzing: Western Channel (ID: 555622038)
+Time period: 2025-03-01 to 2025-10-23
+Retrieved 7820 fishing activity records
+ * Restarting with stat
+127.0.0.1 - - [23/Oct/2025 22:38:22] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 22:38:22] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 22:38:22] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 22:38:22] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 23:00:44] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Oct/2025 23:00:44] "GET /static/css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 23:00:44] "GET /static/logo-zmescience.png HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 23:00:44] "GET /static/js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [23/Oct/2025 23:02:10] "POST /api/analyze_mpa HTTP/1.1" 200 -

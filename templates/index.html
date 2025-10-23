@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK MPA Fishing Activity Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UK Marine Protected Area Fishing Activity Analysis</h1>
+            <p>Analyze fishing activity in UK MPAs using Global Fishing Watch data</p>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <h2>Select MPA and Date Range</h2>
+                
+                <div class="search-form">
+                    <div class="form-group">
+                        <label for="mpa-search">Search MPA:</label>
+                        <div class="search-input-container">
+                            <input type="text" id="mpa-search" placeholder="Type to search..." autocomplete="off">
+                            <button type="button" id="browse-all-btn" class="browse-btn" title="Browse all MPAs">
+                                📋 Browse All
+                            </button>
+                        </div>
+                        <div id="mpa-dropdown" class="dropdown"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="start-date">Start Date:</label>
+                        <input type="date" id="start-date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end-date">End Date:</label>
+                        <input type="date" id="end-date">
+                    </div>
+
+                    <button id="analyze-btn" class="btn-primary">Analyze Fishing Activity</button>
+                </div>
+            </section>
+
+            <section class="app-description">
+                <div class="description-content">
+                    <h2>About This Application</h2>
+                    <p>This tool analyzes fishing activity within UK Marine Protected Areas (MPAs) using data from <a href="https://globalfishingwatch.org/" target="_blank" class="gfw-link"><strong>Global Fishing Watch</strong></a>. It helps researchers, conservationists, and policymakers understand the extent and nature of fishing activities in protected marine environments.</p>
+                    
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h3>What is Harmful Fishing?</h3>
+                            <p>We classify <strong>trawling</strong> and <strong>dredging</strong> as harmful fishing practices due to their significant impact on seafloor habitats and marine ecosystems. These bottom-contact methods can damage sensitive marine environments and protected features.</p>
+                        </div>
+                        
+                        <div class="info-card">
+                            <h3>Apparent Fishing Activity</h3>
+                            <p>Data represents <strong>"apparent fishing"</strong> as defined by <a href="https://globalfishingwatch.org/data-blog/what-is-apparent-fishing/" target="_blank" class="gfw-link">Global Fishing Watch</a> - vessel behavior patterns that indicate likely fishing activity based on satellite tracking, speed, and direction changes.</p>
+                        </div>
+                        
+                        <div class="info-card">
+                            <h3>Important Limitations</h3>
+                            <ul>
+                                <li>Data only includes vessels with AIS (Automatic Identification System) transponders</li>
+                                <li>Small vessels (&lt;15m) often lack AIS and are not captured</li>
+                                <li>Some fishing activity may be misclassified as non-fishing and vice versa</li>
+                                <li>Vessel gear types are derived from registries and may not reflect actual gear used</li>
+                                <li>Data quality varies by region and time period</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="attribution">
+                        <div class="attribution-row">
+                            <div class="attribution-item">
+                                <p><strong>Created by:</strong> <a href="https://zmescience.com" target="_blank" class="zme-link">
+                                    <img src="{{ url_for('static', filename='logo-zmescience.png') }}" alt="ZME Science" class="zme-logo">
+                                </a></p>
+                            </div>
+                            <div class="attribution-item">
+                                <p><strong>Supported by:</strong> <a href="https://earthjournalism.net" target="_blank" class="ejn-link">Earth Journalism Network</a> grant</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="loading" class="loading-section" style="display: none;">
+                <div class="spinner"></div>
+                <p>Querying Global Fishing Watch API...</p>
+            </section>
+
+            <section id="results" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2 id="results-title"></h2>
+                    <div class="download-buttons">
+                        <button id="download-csv" class="btn-download" title="Download as CSV">
+                            📊 CSV
+                        </button>
+                        <button id="download-pdf" class="btn-download" title="Download as PDF">
+                            📄 PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="protected-features" class="features-section" style="display: none;">
+                    <h3>Protected Features</h3>
+                    <div id="features-list"></div>
+                </div>
+                
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total Fishing Hours</h3>
+                        <p class="metric" id="total-hours">-</p>
+                    </div>
+                    <div class="card">
+                        <h3>Unique Vessels</h3>
+                        <p class="metric" id="unique-vessels">-</p>
+                    </div>
+                    <div class="card">
+                        <h3>Harmful Fishing</h3>
+                        <p class="metric harmful-fishing-metric" id="harmful-fishing-hours">-</p>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Monthly Activity: Total, Trawling & Dredging</h3>
+                        <canvas id="monthly-chart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Activity by Gear Type</h3>
+                        <canvas id="gear-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="vessels-section">
+                    <h3>Most Active Vessels</h3>
+                    <table id="vessels-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>🚢 Vessel Name</th>
+                                <th>Flag</th>
+                                <th>Hours</th>
+                                <th>Primary Gear</th>
+                                <th>MMSI</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div id="load-more-container" style="text-align: center; margin-top: 20px; display: none;">
+                        <button id="load-more-btn" class="btn-secondary">Load More Vessels</button>
+                        <p id="vessels-info" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // MPA data from backend
+        const mpas = {{ mpas | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
