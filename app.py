@@ -15,6 +15,8 @@ from collections import defaultdict
 import io
 import requests
 from concurrent.futures import ThreadPoolExecutor
+import time
+import asyncio
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
@@ -28,6 +30,32 @@ ACCESS_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImtpZEtleSJ9.eyJkYXR
 
 # Cache for vessel details to avoid repeated API calls
 vessel_cache = {}
+
+# Rate limiting for GFW API calls
+class RateLimiter:
+    def __init__(self, max_calls_per_second=1):
+        self.max_calls_per_second = max_calls_per_second
+        self.calls = []
+        
+    async def wait_if_needed(self):
+        """Wait if we're hitting rate limits"""
+        now = time.time()
+        
+        # Remove calls older than 1 second
+        self.calls = [call_time for call_time in self.calls if now - call_time < 1.0]
+        
+        # If we've made too many calls in the last second, wait
+        if len(self.calls) >= self.max_calls_per_second:
+            sleep_time = 1.0 - (now - self.calls[0])
+            if sleep_time > 0:
+                print(f"Rate limiting: waiting {sleep_time:.2f} seconds")
+                await asyncio.sleep(sleep_time)
+        
+        # Record this call
+        self.calls.append(now)
+
+# Global rate limiter instance
+gfw_rate_limiter = RateLimiter(max_calls_per_second=1)  # Conservative: 1 call per second
 
 # Load UK MPAs from master dataset
 def load_uk_mpas():
@@ -208,8 +236,86 @@ def analyze_mpa():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def split_date_range_into_years(start_date, end_date):
+    """Split a date range into yearly chunks to respect GFW API 1-year limit."""
+    start = datetime.strptime(start_date, '%Y-%m-%d')
+    end = datetime.strptime(end_date, '%Y-%m-%d')
+    
+    date_ranges = []
+    current_start = start
+    
+    while current_start < end:
+        # Calculate end of current year period (max 365 days)
+        current_end = min(
+            current_start + timedelta(days=364),  # 364 days to stay under 1 year
+            end
+        )
+        
+        date_ranges.append({
+            'start': current_start.strftime('%Y-%m-%d'),
+            'end': current_end.strftime('%Y-%m-%d'),
+            'year': current_start.year
+        })
+        
+        # Move to next period
+        current_start = current_end + timedelta(days=1)
+    
+    return date_ranges
+
+async def fetch_single_year_data(client, mpa_region, start_date, end_date, year_info, max_retries=2):
+    """Fetch data for a single year period with rate limiting and retry logic."""
+    for attempt in range(max_retries + 1):
+        try:
+            # Apply rate limiting
+            await gfw_rate_limiter.wait_if_needed()
+            
+            if attempt > 0:
+                print(f"Retry {attempt}/{max_retries} for {year_info['year']}")
+                # Exponential backoff for retries
+                await asyncio.sleep(2 ** attempt)
+            
+            print(f"Fetching data for {year_info['year']}: {start_date} to {end_date}")
+            
+            start_time = time.time()
+            report = await client.fourwings.create_report(
+                spatial_resolution="HIGH",
+                temporal_resolution="MONTHLY",
+                group_by="VESSEL_ID",
+                datasets=["public-global-fishing-effort:latest"],
+                start_date=start_date,
+                end_date=end_date,
+                region=mpa_region
+            )
+            
+            df = report.df()
+            elapsed_time = time.time() - start_time
+            print(f"Retrieved {len(df)} records for {year_info['year']} in {elapsed_time:.2f}s")
+            return {
+                'success': True, 
+                'data': df, 
+                'year': year_info['year'], 
+                'elapsed_time': elapsed_time,
+                'attempts': attempt + 1
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Attempt {attempt + 1} failed for {year_info['year']}: {error_msg}")
+            
+            # Don't retry on certain errors
+            if "unauthorized" in error_msg.lower() or "forbidden" in error_msg.lower():
+                return {'success': False, 'error': f"Authentication error: {error_msg}", 'year': year_info['year']}
+            
+            # If this was the last attempt, return error
+            if attempt == max_retries:
+                return {
+                    'success': False, 
+                    'error': f"Failed after {max_retries + 1} attempts: {error_msg}", 
+                    'year': year_info['year']
+                }
+
 async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
-    """Analyze fishing activity for a specific MPA using GFW API."""
+    """Analyze fishing activity for a specific MPA using GFW API with multi-year support."""
     
     client = gfw.Client(access_token=ACCESS_TOKEN)
     
@@ -222,21 +328,90 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
     print(f"Analyzing: {mpa_name} (ID: {wdpa_code})")
     print(f"Time period: {start_date} to {end_date}")
     
+    # Check if date range spans more than 1 year
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    days_diff = (end_dt - start_dt).days
+    
     try:
-        # Query 4Wings API - exact pattern from working script
-        report = await client.fourwings.create_report(
-            spatial_resolution="HIGH",
-            temporal_resolution="MONTHLY",
-            group_by="VESSEL_ID",
-            datasets=["public-global-fishing-effort:latest"],
-            start_date=start_date,
-            end_date=end_date,
-            region=mpa_region
-        )
-        
-        # Get data as DataFrame
-        df = report.df()
-        print(f"Retrieved {len(df)} fishing activity records")
+        if days_diff <= 365:
+            # Single API call for ranges <= 1 year
+            print("Single year analysis - making one API call")
+            report = await client.fourwings.create_report(
+                spatial_resolution="HIGH",
+                temporal_resolution="MONTHLY",
+                group_by="VESSEL_ID",
+                datasets=["public-global-fishing-effort:latest"],
+                start_date=start_date,
+                end_date=end_date,
+                region=mpa_region
+            )
+            
+            df = report.df()
+            print(f"Retrieved {len(df)} fishing activity records")
+        else:
+            # Multi-year analysis - split into yearly chunks
+            date_ranges = split_date_range_into_years(start_date, end_date)
+            print(f"Multi-year analysis - splitting into {len(date_ranges)} API calls")
+            
+            all_dataframes = []
+            failed_years = []
+            performance_stats = {
+                'total_api_calls': len(date_ranges),
+                'successful_calls': 0,
+                'failed_calls': 0,
+                'total_elapsed_time': 0,
+                'average_call_time': 0,
+                'retries_used': 0
+            }
+            
+            # Fetch data for each year period
+            analysis_start_time = time.time()
+            for i, range_info in enumerate(date_ranges):
+                print(f"Processing period {i+1}/{len(date_ranges)}: {range_info['start']} to {range_info['end']}")
+                
+                result = await fetch_single_year_data(
+                    client, mpa_region, 
+                    range_info['start'], 
+                    range_info['end'], 
+                    range_info
+                )
+                
+                if result['success']:
+                    performance_stats['successful_calls'] += 1
+                    performance_stats['total_elapsed_time'] += result.get('elapsed_time', 0)
+                    performance_stats['retries_used'] += result.get('attempts', 1) - 1
+                    
+                    if not result['data'].empty:
+                        all_dataframes.append(result['data'])
+                else:
+                    performance_stats['failed_calls'] += 1
+                    failed_years.append({
+                        'year': result['year'],
+                        'error': result['error']
+                    })
+                    print(f"Failed to fetch data for {result['year']}: {result['error']}")
+            
+            total_analysis_time = time.time() - analysis_start_time
+            performance_stats['total_analysis_time'] = total_analysis_time
+            
+            if performance_stats['successful_calls'] > 0:
+                performance_stats['average_call_time'] = performance_stats['total_elapsed_time'] / performance_stats['successful_calls']
+            
+            # Combine all DataFrames
+            if all_dataframes:
+                df = pd.concat(all_dataframes, ignore_index=True)
+                print(f"Combined {len(all_dataframes)} datasets with {len(df)} total records")
+                print(f"Multi-year analysis completed in {total_analysis_time:.2f}s with {performance_stats['retries_used']} retries")
+                
+                # Add performance and error info to response for debugging
+                if failed_years:
+                    print(f"Warning: Failed to fetch data for {len(failed_years)} periods")
+            else:
+                df = pd.DataFrame()
+                print("No data retrieved from any time period")
+            
+        print(f"Final dataset contains {len(df)} fishing activity records")
         
         if len(df) == 0:
             return {
@@ -252,7 +427,7 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
             }
         
         # Process data using same analysis function
-        analysis = analyze_fishing_data(df, mpa_name)
+        analysis = analyze_fishing_data(df, mpa_name, start_date, end_date)
         
         # Add protected features
         protected_features = get_protected_features(mpa_name)
@@ -274,8 +449,104 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
             "wdpa_code": wdpa_code
         }
 
-def analyze_fishing_data(df, mpa_name):
-    """Process fishing data and generate analysis - from working script."""
+def analyze_multi_year_trends(df, start_dt, end_dt):
+    """Analyze multi-year trends and patterns in fishing data."""
+    multi_year_analysis = {
+        "total_years": (end_dt - start_dt).days / 365.25,
+        "yearly_summary": {},
+        "year_over_year": {},
+        "trend_analysis": {},
+        "seasonal_patterns": {}
+    }
+    
+    if df.empty or 'date' not in df.columns:
+        return multi_year_analysis
+    
+    # Convert date column to datetime if it's not already
+    df['date'] = pd.to_datetime(df['date'])
+    df['year'] = df['date'].dt.year
+    df['month'] = df['date'].dt.month
+    
+    # Yearly summary statistics
+    yearly_stats = df.groupby('year').agg({
+        'hours': 'sum',
+        'vessel_id': 'nunique'
+    }).round(2)
+    
+    multi_year_analysis["yearly_summary"] = {
+        str(year): {
+            "total_hours": float(row['hours']),
+            "unique_vessels": int(row['vessel_id'])
+        }
+        for year, row in yearly_stats.iterrows()
+    }
+    
+    # Year-over-year changes
+    years = sorted(yearly_stats.index)
+    if len(years) > 1:
+        yoy_changes = {}
+        for i in range(1, len(years)):
+            prev_year = years[i-1]
+            curr_year = years[i]
+            
+            prev_hours = yearly_stats.loc[prev_year, 'hours']
+            curr_hours = yearly_stats.loc[curr_year, 'hours']
+            
+            if prev_hours > 0:
+                change_percent = ((curr_hours - prev_hours) / prev_hours) * 100
+            else:
+                change_percent = 100 if curr_hours > 0 else 0
+                
+            yoy_changes[f"{prev_year}-{curr_year}"] = {
+                "hours_change_percent": round(change_percent, 1),
+                "hours_change_absolute": round(curr_hours - prev_hours, 2),
+                "vessel_change": int(yearly_stats.loc[curr_year, 'vessel_id'] - yearly_stats.loc[prev_year, 'vessel_id'])
+            }
+        
+        multi_year_analysis["year_over_year"] = yoy_changes
+    
+    # Trend analysis (linear regression on yearly totals)
+    if len(years) >= 3:
+        from scipy import stats
+        try:
+            slope, intercept, r_value, p_value, std_err = stats.linregress(years, yearly_stats['hours'].values)
+            multi_year_analysis["trend_analysis"] = {
+                "slope": round(slope, 2),
+                "r_squared": round(r_value**2, 3),
+                "p_value": round(p_value, 3),
+                "trend_direction": "increasing" if slope > 0 else "decreasing",
+                "trend_strength": "strong" if abs(r_value) > 0.7 else "moderate" if abs(r_value) > 0.4 else "weak",
+                "significant": p_value < 0.05
+            }
+        except ImportError:
+            # Fallback without scipy
+            if len(years) >= 2:
+                first_year_avg = yearly_stats['hours'].iloc[0]
+                last_year_avg = yearly_stats['hours'].iloc[-1]
+                multi_year_analysis["trend_analysis"] = {
+                    "trend_direction": "increasing" if last_year_avg > first_year_avg else "decreasing",
+                    "overall_change_percent": round(((last_year_avg - first_year_avg) / first_year_avg) * 100, 1) if first_year_avg > 0 else 0
+                }
+    
+    # Seasonal patterns across years
+    if 'month' in df.columns:
+        seasonal_stats = df.groupby('month')['hours'].mean().round(2)
+        multi_year_analysis["seasonal_patterns"] = {
+            f"month_{month}": float(hours)
+            for month, hours in seasonal_stats.items()
+        }
+        
+        # Find peak and low seasons
+        peak_month = seasonal_stats.idxmax()
+        low_month = seasonal_stats.idxmin()
+        multi_year_analysis["seasonal_patterns"]["peak_month"] = int(peak_month)
+        multi_year_analysis["seasonal_patterns"]["low_month"] = int(low_month)
+        multi_year_analysis["seasonal_patterns"]["seasonality_ratio"] = round(seasonal_stats.max() / seasonal_stats.min(), 2) if seasonal_stats.min() > 0 else 0
+    
+    return multi_year_analysis
+
+def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
+    """Process fishing data and generate analysis with multi-year support."""
     
     analysis = {
         "mpa_name": mpa_name,
@@ -285,8 +556,20 @@ def analyze_fishing_data(df, mpa_name):
         "temporal": {},
         "gear_types": {},
         "vessels": {},
-        "conservation_alerts": []
+        "conservation_alerts": [],
+        "multi_year": {}
     }
+    
+    # Determine if this is multi-year analysis
+    is_multi_year = False
+    if start_date and end_date:
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+        days_diff = (end_dt - start_dt).days
+        is_multi_year = days_diff > 365
+        
+        if is_multi_year:
+            analysis["multi_year"] = analyze_multi_year_trends(df, start_dt, end_dt)
     
     # Summary statistics
     total_hours = df['hours'].sum() if 'hours' in df.columns else 0

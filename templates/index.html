@@ -30,14 +30,35 @@
                         <div id="mpa-dropdown" class="dropdown"></div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="start-date">Start Date:</label>
-                        <input type="date" id="start-date">
-                    </div>
+                    <div class="date-range-section">
+                        <h3>Date Range Selection</h3>
+                        <div class="preset-buttons">
+                            <button type="button" class="btn-preset" data-days="30">Last 30 Days</button>
+                            <button type="button" class="btn-preset" data-days="90">Last 3 Months</button>
+                            <button type="button" class="btn-preset" data-days="180">Last 6 Months</button>
+                            <button type="button" class="btn-preset" data-days="365">Last Year</button>
+                            <button type="button" class="btn-preset" data-days="730">Last 2 Years</button>
+                        </div>
+                        
+                        <div class="custom-dates">
+                            <div class="form-group">
+                                <label for="start-date">Custom Start Date:</label>
+                                <input type="date" id="start-date">
+                            </div>
 
-                    <div class="form-group">
-                        <label for="end-date">End Date:</label>
-                        <input type="date" id="end-date">
+                            <div class="form-group">
+                                <label for="end-date">Custom End Date:</label>
+                                <input type="date" id="end-date">
+                            </div>
+                        </div>
+                        
+                        <div id="date-warning" class="date-warning" style="display: none;">
+                            <p><strong>⚠️ Multi-Year Analysis:</strong> Date ranges longer than 1 year require multiple API calls and will take longer to process. Progress will be shown during analysis.</p>
+                        </div>
+                        
+                        <div id="date-info" class="date-info">
+                            <p><strong>Selected Range:</strong> <span id="selected-range">Last 30 days</span> | <strong>Estimated Time:</strong> <span id="estimated-time">~5-10 seconds</span></p>
+                        </div>
                     </div>
 
                     <button id="analyze-btn" class="btn-primary">Analyze Fishing Activity</button>
@@ -89,7 +110,13 @@
 
             <section id="loading" class="loading-section" style="display: none;">
                 <div class="spinner"></div>
-                <p>Querying Global Fishing Watch API...</p>
+                <p id="loading-message">Querying Global Fishing Watch API...</p>
+                <div id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <p id="progress-text">Fetching data for year 1 of 3...</p>
+                </div>
             </section>
 
             <section id="results" class="results-section" style="display: none;">
@@ -122,6 +149,30 @@
                     <div class="card">
                         <h3>Harmful Fishing</h3>
                         <p class="metric harmful-fishing-metric" id="harmful-fishing-hours">-</p>
+                    </div>
+                </div>
+
+                <div id="multi-year-section" class="multi-year-section" style="display: none;">
+                    <h3>📊 Multi-Year Analysis</h3>
+                    
+                    <div class="multi-year-cards">
+                        <div class="card">
+                            <h4>Time Span</h4>
+                            <p class="metric" id="total-years">-</p>
+                        </div>
+                        <div class="card">
+                            <h4>Trend Direction</h4>
+                            <p class="metric" id="trend-direction">-</p>
+                        </div>
+                        <div class="card">
+                            <h4>Peak Season</h4>
+                            <p class="metric" id="peak-season">-</p>
+                        </div>
+                    </div>
+                    
+                    <div class="yearly-summary" id="yearly-summary">
+                        <h4>Year-by-Year Summary</h4>
+                        <div id="yearly-breakdown"></div>
                     </div>
                 </div>
 

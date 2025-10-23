@@ -11,8 +11,10 @@ let currentAnalysisData = null;
 document.addEventListener('DOMContentLoaded', function() {
     setupMPASearch();
     setupDateInputs();
+    setupPresetButtons();
     setupAnalyzeButton();
     setupDownloadButtons();
+    setupDateValidation();
 });
 
 // Setup MPA search with dropdown
@@ -148,6 +150,94 @@ function setupDateInputs() {
     
     document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
     document.getElementById('end-date').value = new Date().toISOString().split('T')[0];
+    
+    // Set default preset button as active
+    document.querySelector('.btn-preset[data-days="30"]').classList.add('active');
+    updateDateInfo();
+}
+
+// Setup preset date range buttons
+function setupPresetButtons() {
+    const presetButtons = document.querySelectorAll('.btn-preset');
+    
+    presetButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            presetButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Calculate date range
+            const days = parseInt(this.dataset.days);
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            
+            // Update inputs
+            document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
+            document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
+            
+            // Update info display
+            updateDateInfo();
+        });
+    });
+}
+
+// Setup date validation
+function setupDateValidation() {
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    
+    // Add event listeners for manual date changes
+    [startDateInput, endDateInput].forEach(input => {
+        input.addEventListener('change', function() {
+            // Clear active preset button when manually changing dates
+            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            updateDateInfo();
+        });
+    });
+}
+
+// Update date info display
+function updateDateInfo() {
+    const startDate = new Date(document.getElementById('start-date').value);
+    const endDate = new Date(document.getElementById('end-date').value);
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    
+    // Update selected range text
+    const selectedRangeElement = document.getElementById('selected-range');
+    const estimatedTimeElement = document.getElementById('estimated-time');
+    const dateWarningElement = document.getElementById('date-warning');
+    
+    if (daysDiff <= 0) {
+        selectedRangeElement.textContent = 'Invalid date range';
+        estimatedTimeElement.textContent = 'N/A';
+        dateWarningElement.style.display = 'none';
+        return;
+    }
+    
+    // Format date range
+    const formatDate = (date) => date.toLocaleDateString('en-GB', { 
+        day: 'numeric', month: 'short', year: 'numeric' 
+    });
+    selectedRangeElement.textContent = `${formatDate(startDate)} - ${formatDate(endDate)} (${daysDiff} days)`;
+    
+    // Show warning for multi-year queries
+    if (daysDiff > 365) {
+        dateWarningElement.style.display = 'block';
+        const years = Math.ceil(daysDiff / 365);
+        estimatedTimeElement.textContent = `~${years * 10}-${years * 20} seconds (${years} API calls)`;
+    } else {
+        dateWarningElement.style.display = 'none';
+        if (daysDiff <= 30) {
+            estimatedTimeElement.textContent = '~5-10 seconds';
+        } else if (daysDiff <= 90) {
+            estimatedTimeElement.textContent = '~8-15 seconds';
+        } else {
+            estimatedTimeElement.textContent = '~10-20 seconds';
+        }
+    }
 }
 
 // Setup analyze button
@@ -252,6 +342,9 @@ function displayResults(data) {
     const harmfulFishingElement = document.getElementById('harmful-fishing-hours');
     harmfulFishingElement.innerHTML = `${data.summary.harmful_fishing_hours.toFixed(1)} <span style="font-size: 20px; font-weight: normal;">(${data.summary.harmful_fishing_percentage.toFixed(1)}%)</span>`;
     
+    // Display multi-year analysis if available
+    displayMultiYearAnalysis(data.multi_year);
+    
     // Update charts
     updateMonthlyChart(data.temporal);
     updateGearChart(data.gear_types);
@@ -261,6 +354,82 @@ function displayResults(data) {
     
     // Scroll to results
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Display multi-year analysis
+function displayMultiYearAnalysis(multiYearData) {
+    const multiYearSection = document.getElementById('multi-year-section');
+    
+    if (!multiYearData || Object.keys(multiYearData).length === 0 || multiYearData.total_years <= 1) {
+        multiYearSection.style.display = 'none';
+        return;
+    }
+    
+    multiYearSection.style.display = 'block';
+    
+    // Update summary cards
+    document.getElementById('total-years').textContent = `${multiYearData.total_years.toFixed(1)} years`;
+    
+    // Trend direction
+    const trendElement = document.getElementById('trend-direction');
+    if (multiYearData.trend_analysis && multiYearData.trend_analysis.trend_direction) {
+        const direction = multiYearData.trend_analysis.trend_direction;
+        const strength = multiYearData.trend_analysis.trend_strength || '';
+        
+        let trendIcon = '→';
+        let trendClass = 'trend-stable';
+        
+        if (direction === 'increasing') {
+            trendIcon = '↗️';
+            trendClass = 'trend-increasing';
+        } else if (direction === 'decreasing') {
+            trendIcon = '↘️';
+            trendClass = 'trend-decreasing';
+        }
+        
+        trendElement.innerHTML = `<span class="trend-indicator ${trendClass}">${trendIcon}</span> ${direction}`;
+        
+        if (strength) {
+            trendElement.innerHTML += ` <small>(${strength})</small>`;
+        }
+    } else {
+        trendElement.textContent = 'Insufficient data';
+    }
+    
+    // Peak season
+    const peakSeasonElement = document.getElementById('peak-season');
+    if (multiYearData.seasonal_patterns && multiYearData.seasonal_patterns.peak_month) {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const peakMonth = monthNames[multiYearData.seasonal_patterns.peak_month - 1];
+        peakSeasonElement.textContent = peakMonth;
+    } else {
+        peakSeasonElement.textContent = 'N/A';
+    }
+    
+    // Yearly breakdown
+    const yearlyBreakdown = document.getElementById('yearly-breakdown');
+    yearlyBreakdown.innerHTML = '';
+    
+    if (multiYearData.yearly_summary) {
+        const years = Object.keys(multiYearData.yearly_summary).sort();
+        
+        years.forEach(year => {
+            const yearData = multiYearData.yearly_summary[year];
+            const yearItem = document.createElement('div');
+            yearItem.className = 'yearly-breakdown-item';
+            
+            yearItem.innerHTML = `
+                <div class="year-label">${year}</div>
+                <div class="year-stats">
+                    <span>${yearData.total_hours.toFixed(1)} hours</span>
+                    <span>${yearData.unique_vessels} vessels</span>
+                </div>
+            `;
+            
+            yearlyBreakdown.appendChild(yearItem);
+        });
+    }
 }
 
 
