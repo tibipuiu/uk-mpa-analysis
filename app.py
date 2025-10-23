@@ -6,9 +6,7 @@ Dynamic analysis for any UK MPA with custom date ranges
 
 from flask import Flask, render_template, jsonify, request, Response, make_response
 import pandas as pd
-import asyncio
 import os
-import gfwapiclient as gfw
 import json
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -197,21 +195,15 @@ def analyze_mpa():
     if not all([mpa_name, wdpa_code]):
         return jsonify({'error': 'Missing required parameters'}), 400
     
-    # Run the async analysis
+    # Run the analysis
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(
-            analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date)
-        )
+        result = analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
+def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
     """Analyze fishing activity for a specific MPA using GFW API."""
-    
-    client = gfw.Client(access_token=ACCESS_TOKEN)
     
     # Define MPA region following working pattern
     mpa_region = {
@@ -223,20 +215,29 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
     print(f"Time period: {start_date} to {end_date}")
     
     try:
-        # Query 4Wings API - exact pattern from working script
-        report = await client.fourwings.create_report(
-            spatial_resolution="HIGH",
-            temporal_resolution="MONTHLY",
-            group_by="VESSEL_ID",
-            datasets=["public-global-fishing-effort:latest"],
-            start_date=start_date,
-            end_date=end_date,
-            region=mpa_region
-        )
+        # Query 4Wings API using direct requests
+        url = "https://gateway.api.globalfishingwatch.org/v2/4wings/report"
+        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
         
-        # Get data as DataFrame
-        df = report.df()
-        print(f"Retrieved {len(df)} fishing activity records")
+        payload = {
+            "spatial-resolution": "HIGH",
+            "temporal-resolution": "MONTHLY",
+            "group-by": "VESSEL_ID",
+            "datasets": ["public-global-fishing-effort:latest"],
+            "date-range": f"{start_date},{end_date}",
+            "region": mpa_region
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Convert to DataFrame-like structure for processing
+            df = pd.DataFrame(data.get('entries', []))
+            print(f"Retrieved {len(df)} fishing activity records")
+        else:
+            print(f"API Error: {response.status_code} - {response.text}")
+            df = pd.DataFrame()  # Empty DataFrame
         
         if len(df) == 0:
             return {
