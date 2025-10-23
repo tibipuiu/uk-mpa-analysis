@@ -213,7 +213,6 @@ function setupPresetButtons() {
             startInput.value = formatDate(startDate);
             endInput.value = formatDate(endDate);
             
-            console.log(`Preset ${days} days: ${startInput.value} to ${endInput.value}`);
             
             // Update info display
             updateDateInfo();
@@ -301,6 +300,12 @@ function setupAnalyzeButton() {
 async function analyzeMPA() {
     if (!selectedMPA) {
         alert('Please select an MPA first');
+        // Scroll to MPA search
+        document.getElementById('mpa-search').focus();
+        document.getElementById('mpa-search').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center'
+        });
         return;
     }
     
@@ -309,6 +314,12 @@ async function analyzeMPA() {
     
     if (!startDate || !endDate) {
         alert('Please select both start and end dates');
+        // Scroll to date inputs
+        document.getElementById('start-date').focus();
+        document.querySelector('.date-range-section').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center'
+        });
         return;
     }
     
@@ -321,6 +332,27 @@ async function analyzeMPA() {
     if (appDescription) {
         appDescription.style.display = 'none';
     }
+    
+    // Update loading message based on date range
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    const loadingMessage = document.getElementById('loading-message');
+    
+    if (daysDiff > 365) {
+        const years = Math.ceil(daysDiff / 365);
+        loadingMessage.textContent = `Analyzing ${years}-year period... This may take ${years * 15}-${years * 30} seconds`;
+    } else {
+        loadingMessage.textContent = `Querying Global Fishing Watch API for ${selectedMPA.Site_Name}...`;
+    }
+    
+    // Smooth scroll to loading section
+    setTimeout(() => {
+        document.getElementById('loading').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center'
+        });
+    }, 50);
     
     try {
         const response = await fetch('/api/analyze_mpa', {
@@ -340,14 +372,22 @@ async function analyzeMPA() {
         
         if (data.status === 'success') {
             currentAnalysisData = data; // Store for downloads
-            console.log('Analysis data received:', data);
-            console.log('Multi-year data:', data.multi_year);
             displayResults(data);
         } else {
             alert('Error: ' + (data.error || 'Unknown error occurred'));
+            // Scroll back to form on error
+            document.querySelector('.search-section').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
     } catch (error) {
         alert('Error analyzing MPA: ' + error.message);
+        // Scroll back to form on error
+        document.querySelector('.search-section').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
     } finally {
         document.getElementById('loading').style.display = 'none';
     }
@@ -406,13 +446,17 @@ function displayResults(data) {
     // Update tables
     updateVesselsTable(data.vessels);
     
-    // Scroll to results
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    // Smooth scroll to results with a slight delay to ensure content is rendered
+    setTimeout(() => {
+        document.getElementById('results').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
 }
 
 // Display multi-year analysis
 function displayMultiYearAnalysis(multiYearData) {
-    console.log('displayMultiYearAnalysis called with:', multiYearData);
     const multiYearSection = document.getElementById('multi-year-section');
     
     // Safe check - only show if multiYearData exists and has meaningful content
@@ -420,12 +464,6 @@ function displayMultiYearAnalysis(multiYearData) {
         typeof multiYearData !== 'object' || 
         !multiYearData.total_years || 
         multiYearData.total_years <= 1) {
-        console.log('Multi-year section hidden. Reasons:', {
-            exists: !!multiYearData,
-            isObject: typeof multiYearData === 'object',
-            hasYears: multiYearData?.total_years,
-            yearsValue: multiYearData?.total_years
-        });
         multiYearSection.style.display = 'none';
         return;
     }

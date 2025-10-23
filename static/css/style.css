@@ -541,10 +541,17 @@ header h1 {
 /* Loading */
 .loading-section {
     text-align: center;
-    padding: 60px;
+    padding: 60px 30px;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin: 40px 0;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    scroll-margin-top: 20px;
 }
 
 .spinner {
@@ -567,6 +574,64 @@ header h1 {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Results Footer */
+.results-footer {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.results-attribution {
+    /* Inherits styles from main attribution */
+}
+
+.results-attribution .attribution-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+    align-items: center;
+    justify-content: center;
+}
+
+.results-attribution .attribution-item {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+}
+
+.results-attribution .attribution-item p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.results-attribution .zme-logo {
+    height: 20px;
+    width: auto;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+
+@media (max-width: 768px) {
+    .results-attribution .attribution-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .results-attribution .attribution-item {
+        text-align: center;
+    }
+    
+    .results-footer {
+        margin-top: 30px;
+        padding: 20px;
+    }
 }
 
 .results-header {
@@ -794,6 +859,23 @@ header h1 {
 
 .gfw-link:hover {
     color: #004499;
+}
+
+/* Link styles for results footer */
+.results-attribution .zme-link,
+.results-attribution .ejn-link,
+.results-attribution .gfw-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.results-attribution .zme-link:hover,
+.results-attribution .ejn-link:hover,
+.results-attribution .gfw-link:hover {
+    color: #004499;
+    transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

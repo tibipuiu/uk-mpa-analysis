@@ -428,12 +428,6 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
                 }
             }
         
-        # Debug: Print DataFrame columns and sample data
-        print(f"DataFrame columns: {list(df.columns) if not df.empty else 'DataFrame is empty'}")
-        if not df.empty and len(df) > 0:
-            print(f"First few rows of data:")
-            print(df.head())
-        
         # Process data using same analysis function
         analysis = analyze_fishing_data(df, mpa_name, start_date, end_date)
         
@@ -459,12 +453,9 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
 
 def analyze_multi_year_trends(df, start_dt, end_dt):
     """Analyze multi-year trends and patterns in fishing data."""
-    print(f"analyze_multi_year_trends called with {len(df)} rows")
-    print(f"Date range: {start_dt} to {end_dt}")
-    print(f"DataFrame columns: {list(df.columns) if not df.empty else 'Empty DataFrame'}")
     
     multi_year_analysis = {
-        "total_years": (end_dt - start_dt).days / 365.25,
+        "total_years": float((end_dt - start_dt).days / 365.25),
         "yearly_summary": {},
         "year_over_year": {},
         "trend_analysis": {},
@@ -472,15 +463,12 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
     }
     
     if df.empty:
-        print("DataFrame is empty, returning empty analysis")
         return multi_year_analysis
         
     # Check for date column - might be named differently
     date_columns = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
-    print(f"Potential date columns: {date_columns}")
     
     if not date_columns:
-        print("No date columns found, returning empty analysis")
         return multi_year_analysis
     
     # Find and use the correct date column
@@ -490,17 +478,13 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
         break
     
     if not date_col:
-        print("No usable date column found")
         return multi_year_analysis
-    
-    print(f"Using date column: {date_col}")
     
     # Convert date column to datetime if it's not already
     df[date_col] = pd.to_datetime(df[date_col])
     df['year'] = df[date_col].dt.year
     df['month'] = df[date_col].dt.month
     
-    print(f"Year range in data: {df['year'].min()} to {df['year'].max()}")
     
     # Yearly summary statistics
     yearly_stats = df.groupby('year').agg({
@@ -530,11 +514,11 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
             if prev_hours > 0:
                 change_percent = ((curr_hours - prev_hours) / prev_hours) * 100
             else:
-                change_percent = 100 if curr_hours > 0 else 0
+                change_percent = 100.0 if curr_hours > 0 else 0.0
                 
             yoy_changes[f"{prev_year}-{curr_year}"] = {
-                "hours_change_percent": round(change_percent, 1),
-                "hours_change_absolute": round(curr_hours - prev_hours, 2),
+                "hours_change_percent": float(round(change_percent, 1)),
+                "hours_change_absolute": float(round(curr_hours - prev_hours, 2)),
                 "vessel_change": int(yearly_stats.loc[curr_year, 'vessel_id'] - yearly_stats.loc[prev_year, 'vessel_id'])
             }
         
@@ -546,12 +530,12 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
         try:
             slope, intercept, r_value, p_value, std_err = stats.linregress(years, yearly_stats['hours'].values)
             multi_year_analysis["trend_analysis"] = {
-                "slope": round(slope, 2),
-                "r_squared": round(r_value**2, 3),
-                "p_value": round(p_value, 3),
+                "slope": float(round(slope, 2)),
+                "r_squared": float(round(r_value**2, 3)),
+                "p_value": float(round(p_value, 3)),
                 "trend_direction": "increasing" if slope > 0 else "decreasing",
                 "trend_strength": "strong" if abs(r_value) > 0.7 else "moderate" if abs(r_value) > 0.4 else "weak",
-                "significant": p_value < 0.05
+                "significant": bool(p_value < 0.05)
             }
         except ImportError:
             # Fallback without scipy
@@ -560,7 +544,7 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
                 last_year_avg = yearly_stats['hours'].iloc[-1]
                 multi_year_analysis["trend_analysis"] = {
                     "trend_direction": "increasing" if last_year_avg > first_year_avg else "decreasing",
-                    "overall_change_percent": round(((last_year_avg - first_year_avg) / first_year_avg) * 100, 1) if first_year_avg > 0 else 0
+                    "overall_change_percent": float(round(((last_year_avg - first_year_avg) / first_year_avg) * 100, 1)) if first_year_avg > 0 else 0.0
                 }
     
     # Seasonal patterns across years
@@ -577,9 +561,8 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
             low_month = seasonal_stats.idxmin()
             multi_year_analysis["seasonal_patterns"]["peak_month"] = int(peak_month)
             multi_year_analysis["seasonal_patterns"]["low_month"] = int(low_month)
-            multi_year_analysis["seasonal_patterns"]["seasonality_ratio"] = round(seasonal_stats.max() / seasonal_stats.min(), 2) if seasonal_stats.min() > 0 else 0
+            multi_year_analysis["seasonal_patterns"]["seasonality_ratio"] = float(round(seasonal_stats.max() / seasonal_stats.min(), 2)) if seasonal_stats.min() > 0 else 0.0
     
-    print(f"Final multi-year analysis: {multi_year_analysis}")
     return multi_year_analysis
 
 def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
@@ -608,9 +591,9 @@ def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
         if is_multi_year:
             analysis["multi_year"] = analyze_multi_year_trends(df, start_dt, end_dt)
     
-    # Summary statistics
-    total_hours = df['hours'].sum() if 'hours' in df.columns else 0
-    unique_vessels = df['vessel_id'].nunique() if 'vessel_id' in df.columns else 0
+    # Summary statistics  
+    total_hours = float(df['hours'].sum()) if 'hours' in df.columns else 0.0
+    unique_vessels = int(df['vessel_id'].nunique()) if 'vessel_id' in df.columns else 0
     
     # Calculate trawling and dredging hours separately
     trawling_hours = 0
@@ -619,16 +602,16 @@ def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
         # Separate trawling keywords (excluding dredge)
         trawling_keywords = ['trawl', 'trawler', 'bottom', 'otter', 'beam']
         trawling_df = df[df['gear_type'].str.lower().str.contains('|'.join(trawling_keywords), na=False)]
-        trawling_hours = trawling_df['hours'].sum()
+        trawling_hours = float(trawling_df['hours'].sum())
         
         # Separate dredging keywords
         dredging_keywords = ['dredge']
         dredging_df = df[df['gear_type'].str.lower().str.contains('|'.join(dredging_keywords), na=False)]
-        dredging_hours = dredging_df['hours'].sum()
+        dredging_hours = float(dredging_df['hours'].sum())
     
     # Calculate harmful fishing as sum of trawling and dredging
-    harmful_fishing_hours = trawling_hours + dredging_hours
-    harmful_fishing_percentage = (harmful_fishing_hours / total_hours * 100) if total_hours > 0 else 0
+    harmful_fishing_hours = float(trawling_hours + dredging_hours)
+    harmful_fishing_percentage = float((harmful_fishing_hours / total_hours * 100)) if total_hours > 0 else 0.0
     
     analysis["summary"] = {
         "total_fishing_hours": round(float(total_hours), 2),
@@ -709,7 +692,7 @@ def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
             latest_record = vessel_df.iloc[0]
             
             # Calculate total hours and primary gear type
-            total_hours = vessel_df['hours'].sum()
+            total_hours = float(vessel_df['hours'].sum())
             
             # Get primary gear type (most used)
             if 'gear_type' in vessel_df.columns:
