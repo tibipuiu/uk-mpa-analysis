@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setupPresetButtons();
     setupAnalyzeButton();
     setupDownloadButtons();
-    setupDateValidation();
 });
 
 // Setup MPA search with dropdown
@@ -145,14 +144,38 @@ function selectMPA(mpa) {
 
 // Setup date inputs with defaults
 function setupDateInputs() {
+    const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
     
-    document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
-    document.getElementById('end-date').value = new Date().toISOString().split('T')[0];
+    // Format dates properly
+    const formatDate = (date) => {
+        return date.getFullYear() + '-' + 
+               String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(date.getDate()).padStart(2, '0');
+    };
+    
+    document.getElementById('start-date').value = formatDate(startDate);
+    document.getElementById('end-date').value = formatDate(endDate);
+    
+    // Add change listeners for manual input changes
+    const startInput = document.getElementById('start-date');
+    const endInput = document.getElementById('end-date');
+    
+    [startInput, endInput].forEach(input => {
+        input.addEventListener('change', function() {
+            // Clear active preset when manually changing dates
+            document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
+            updateDateInfo();
+        });
+    });
     
     // Set default preset button as active
-    document.querySelector('.preset-chip[data-days="30"]').classList.add('active');
+    const defaultButton = document.querySelector('.preset-chip[data-days="30"]');
+    if (defaultButton) {
+        defaultButton.classList.add('active');
+    }
+    
     updateDateInfo();
 }
 
@@ -161,7 +184,9 @@ function setupPresetButtons() {
     const presetButtons = document.querySelectorAll('.preset-chip');
     
     presetButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
             // Remove active class from all buttons
             presetButtons.forEach(btn => btn.classList.remove('active'));
             
@@ -174,9 +199,21 @@ function setupPresetButtons() {
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - days);
             
-            // Update inputs
-            document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
-            document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
+            // Format dates for input (YYYY-MM-DD)
+            const formatDate = (date) => {
+                return date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0');
+            };
+            
+            // Update inputs with proper formatting
+            const startInput = document.getElementById('start-date');
+            const endInput = document.getElementById('end-date');
+            
+            startInput.value = formatDate(startDate);
+            endInput.value = formatDate(endDate);
+            
+            console.log(`Preset ${days} days: ${startInput.value} to ${endInput.value}`);
             
             // Update info display
             updateDateInfo();
@@ -184,25 +221,18 @@ function setupPresetButtons() {
     });
 }
 
-// Setup date validation
-function setupDateValidation() {
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-    
-    // Add event listeners for manual date changes
-    [startDateInput, endDateInput].forEach(input => {
-        input.addEventListener('change', function() {
-            // Clear active preset button when manually changing dates
-            document.querySelectorAll('.preset-chip').forEach(btn => btn.classList.remove('active'));
-            updateDateInfo();
-        });
-    });
-}
 
 // Update date info display
 function updateDateInfo() {
-    const startDate = new Date(document.getElementById('start-date').value);
-    const endDate = new Date(document.getElementById('end-date').value);
+    const startInput = document.getElementById('start-date');
+    const endInput = document.getElementById('end-date');
+    
+    if (!startInput.value || !endInput.value) {
+        return;
+    }
+    
+    const startDate = new Date(startInput.value);
+    const endDate = new Date(endInput.value);
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     
     // Update selected range text
@@ -217,25 +247,47 @@ function updateDateInfo() {
         return;
     }
     
-    // Format date range
-    const formatDate = (date) => date.toLocaleDateString('en-GB', { 
-        day: 'numeric', month: 'short', year: 'numeric' 
-    });
-    selectedRangeElement.textContent = `${formatDate(startDate)} - ${formatDate(endDate)} (${daysDiff} days)`;
+    // Format date range nicely
+    const formatDate = (date) => {
+        const options = { 
+            day: 'numeric', 
+            month: 'short', 
+            year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+        };
+        return date.toLocaleDateString('en-GB', options);
+    };
     
-    // Show warning for multi-year queries
+    // Create readable range description
+    let rangeText;
+    if (daysDiff === 1) {
+        rangeText = `${formatDate(startDate)} (1 day)`;
+    } else if (daysDiff <= 31) {
+        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (${daysDiff} days)`;
+    } else if (daysDiff <= 365) {
+        const months = Math.round(daysDiff / 30);
+        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (~${months} month${months > 1 ? 's' : ''})`;
+    } else {
+        const years = (daysDiff / 365).toFixed(1);
+        rangeText = `${formatDate(startDate)} to ${formatDate(endDate)} (~${years} years)`;
+    }
+    
+    selectedRangeElement.textContent = rangeText;
+    
+    // Show warning and estimate time for multi-year queries
     if (daysDiff > 365) {
         dateWarningElement.style.display = 'block';
-        const years = Math.ceil(daysDiff / 365);
-        estimatedTimeElement.textContent = `~${years * 10}-${years * 20} seconds (${years} API calls)`;
+        const apiCalls = Math.ceil(daysDiff / 365);
+        estimatedTimeElement.textContent = `${apiCalls * 15}-${apiCalls * 30} seconds (${apiCalls} API calls)`;
     } else {
         dateWarningElement.style.display = 'none';
-        if (daysDiff <= 30) {
-            estimatedTimeElement.textContent = '~5-10 seconds';
+        if (daysDiff <= 7) {
+            estimatedTimeElement.textContent = '3-5 seconds';
+        } else if (daysDiff <= 30) {
+            estimatedTimeElement.textContent = '5-10 seconds';
         } else if (daysDiff <= 90) {
-            estimatedTimeElement.textContent = '~8-15 seconds';
+            estimatedTimeElement.textContent = '8-15 seconds';
         } else {
-            estimatedTimeElement.textContent = '~10-20 seconds';
+            estimatedTimeElement.textContent = '10-20 seconds';
         }
     }
 }
@@ -288,6 +340,8 @@ async function analyzeMPA() {
         
         if (data.status === 'success') {
             currentAnalysisData = data; // Store for downloads
+            console.log('Analysis data received:', data);
+            console.log('Multi-year data:', data.multi_year);
             displayResults(data);
         } else {
             alert('Error: ' + (data.error || 'Unknown error occurred'));
@@ -358,6 +412,7 @@ function displayResults(data) {
 
 // Display multi-year analysis
 function displayMultiYearAnalysis(multiYearData) {
+    console.log('displayMultiYearAnalysis called with:', multiYearData);
     const multiYearSection = document.getElementById('multi-year-section');
     
     // Safe check - only show if multiYearData exists and has meaningful content
@@ -365,6 +420,12 @@ function displayMultiYearAnalysis(multiYearData) {
         typeof multiYearData !== 'object' || 
         !multiYearData.total_years || 
         multiYearData.total_years <= 1) {
+        console.log('Multi-year section hidden. Reasons:', {
+            exists: !!multiYearData,
+            isObject: typeof multiYearData === 'object',
+            hasYears: multiYearData?.total_years,
+            yearsValue: multiYearData?.total_years
+        });
         multiYearSection.style.display = 'none';
         return;
     }

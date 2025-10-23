@@ -428,6 +428,12 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
                 }
             }
         
+        # Debug: Print DataFrame columns and sample data
+        print(f"DataFrame columns: {list(df.columns) if not df.empty else 'DataFrame is empty'}")
+        if not df.empty and len(df) > 0:
+            print(f"First few rows of data:")
+            print(df.head())
+        
         # Process data using same analysis function
         analysis = analyze_fishing_data(df, mpa_name, start_date, end_date)
         
@@ -453,6 +459,10 @@ async def analyze_mpa_fishing(mpa_name, wdpa_code, start_date, end_date):
 
 def analyze_multi_year_trends(df, start_dt, end_dt):
     """Analyze multi-year trends and patterns in fishing data."""
+    print(f"analyze_multi_year_trends called with {len(df)} rows")
+    print(f"Date range: {start_dt} to {end_dt}")
+    print(f"DataFrame columns: {list(df.columns) if not df.empty else 'Empty DataFrame'}")
+    
     multi_year_analysis = {
         "total_years": (end_dt - start_dt).days / 365.25,
         "yearly_summary": {},
@@ -461,13 +471,36 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
         "seasonal_patterns": {}
     }
     
-    if df.empty or 'date' not in df.columns:
+    if df.empty:
+        print("DataFrame is empty, returning empty analysis")
+        return multi_year_analysis
+        
+    # Check for date column - might be named differently
+    date_columns = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
+    print(f"Potential date columns: {date_columns}")
+    
+    if not date_columns:
+        print("No date columns found, returning empty analysis")
         return multi_year_analysis
     
+    # Find and use the correct date column
+    date_col = None
+    for col in date_columns:
+        date_col = col
+        break
+    
+    if not date_col:
+        print("No usable date column found")
+        return multi_year_analysis
+    
+    print(f"Using date column: {date_col}")
+    
     # Convert date column to datetime if it's not already
-    df['date'] = pd.to_datetime(df['date'])
-    df['year'] = df['date'].dt.year
-    df['month'] = df['date'].dt.month
+    df[date_col] = pd.to_datetime(df[date_col])
+    df['year'] = df[date_col].dt.year
+    df['month'] = df[date_col].dt.month
+    
+    print(f"Year range in data: {df['year'].min()} to {df['year'].max()}")
     
     # Yearly summary statistics
     yearly_stats = df.groupby('year').agg({
@@ -531,7 +564,7 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
                 }
     
     # Seasonal patterns across years
-    if 'month' in df.columns:
+    if 'month' in df.columns and 'hours' in df.columns:
         seasonal_stats = df.groupby('month')['hours'].mean().round(2)
         multi_year_analysis["seasonal_patterns"] = {
             f"month_{month}": float(hours)
@@ -539,12 +572,14 @@ def analyze_multi_year_trends(df, start_dt, end_dt):
         }
         
         # Find peak and low seasons
-        peak_month = seasonal_stats.idxmax()
-        low_month = seasonal_stats.idxmin()
-        multi_year_analysis["seasonal_patterns"]["peak_month"] = int(peak_month)
-        multi_year_analysis["seasonal_patterns"]["low_month"] = int(low_month)
-        multi_year_analysis["seasonal_patterns"]["seasonality_ratio"] = round(seasonal_stats.max() / seasonal_stats.min(), 2) if seasonal_stats.min() > 0 else 0
+        if len(seasonal_stats) > 0:
+            peak_month = seasonal_stats.idxmax()
+            low_month = seasonal_stats.idxmin()
+            multi_year_analysis["seasonal_patterns"]["peak_month"] = int(peak_month)
+            multi_year_analysis["seasonal_patterns"]["low_month"] = int(low_month)
+            multi_year_analysis["seasonal_patterns"]["seasonality_ratio"] = round(seasonal_stats.max() / seasonal_stats.min(), 2) if seasonal_stats.min() > 0 else 0
     
+    print(f"Final multi-year analysis: {multi_year_analysis}")
     return multi_year_analysis
 
 def analyze_fishing_data(df, mpa_name, start_date=None, end_date=None):
