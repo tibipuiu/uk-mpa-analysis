@@ -46,7 +46,7 @@ python app.py
 
 ## API Pattern
 
-Based on working `lyme_bay_analysis.py` script:
+- Global Fishing Watch API
 - Uses `gfwapiclient` Python package
 - Queries with MPA WDPA code
 - Returns vessel-level data with gear types
