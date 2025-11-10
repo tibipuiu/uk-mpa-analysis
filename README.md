@@ -29,7 +29,7 @@ cd mpa_app
 python app.py
 ```
 
-3. Open browser to http://localhost:5000
+3. RUN
 
 ## Usage
 
